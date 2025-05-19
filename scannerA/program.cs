@@ -1,96 +1,69 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Pipes;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading;
+using System; using System.IO; using System.Collections.Generic;
+using System.Text.Json; using System.IO.Pipes; using System.Threading;
+using System.Linq; using System.Text;
 
 namespace ScannerA
 {
-    public class WordCount
+    class WcData
     {
-        public string FileName { get; set; }
-        public string Word { get; set; }
-        public int Count { get; set; }
-
-        public override string ToString()
-        {
-            return $"{FileName}:{Word}:{Count}";
-        }
+        public string f; public string w; public int c;
+        public override string ToString() { return f + ":" + w + ":" + c; }
     }
 
-    class Program
+    internal class P
     {
-        static List<WordCount> wordCounts = new List<WordCount>();
+        static List<WcData> xX = new List<WcData>();
 
-        static void Main(string[] args)
+        static void Main(string[] a)
         {
-            if (args.Length < 2)
+            if (a.Length < 2)
             {
-                Console.WriteLine("Usage: ScannerA <DirectoryPath> <PipeName>");
+                Console.WriteLine("Arg missing: usage: app <dir> <pipe>");
                 return;
             }
 
-            string directoryPath = args[0];
-            string pipeName = args[1];
+            var p1 = a[0]; var p2 = a[1];
 
-            Thread readerThread = new Thread(() => ReadAndIndexFiles(directoryPath));
-            Thread senderThread = new Thread(() => SendData(pipeName));
-
-            readerThread.Start();
-            senderThread.Start();
-
-            readerThread.Join();
-            senderThread.Join();
+            var tR = new Thread(() => R(p1));
+            var tS = new Thread(() => S(p2));
+            tR.Start(); tS.Start();
+            tR.Join(); tS.Join();
         }
 
-        static void ReadAndIndexFiles(string folderPath)
+        static void R(string p)
         {
-            if (!Directory.Exists(folderPath))
+            if (!Directory.Exists(p)) { Console.WriteLine("No dir found."); return; }
+
+            var ff = Directory.GetFiles(p, "*.txt");
+
+            foreach (var z in ff)
             {
-                Console.WriteLine("Directory does not exist.");
-                return;
-            }
+                var t = File.ReadAllText(z);
+                var s = t.Split(new[] { ' ', '\n','\r','.',',',';',':','!','?','-','_' },
+                    StringSplitOptions.RemoveEmptyEntries);
 
-            string[] txtFiles = Directory.GetFiles(folderPath, "*.txt");
+                var g = s.GroupBy(q => q.ToLower());
 
-            foreach (string file in txtFiles)
-            {
-                string content = File.ReadAllText(file);
-                string[] words = content.Split(new[] { ' ', '\n', '\r', '.', ',', ';', ':', '!', '?', '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
-                var grouped = words.GroupBy(w => w.ToLower());
-
-                foreach (var group in grouped)
+                foreach (var gr in g)
                 {
-                    wordCounts.Add(new WordCount
-                    {
-                        FileName = Path.GetFileName(file),
-                        Word = group.Key,
-                        Count = group.Count()
-                    });
+                    xX.Add(new WcData { f = Path.GetFileName(z), w = gr.Key, c = gr.Count() });
                 }
             }
         }
 
-        static void SendData(string pipeName)
+        static void S(string n)
         {
-            // Wait until data is ready
-            while (wordCounts.Count == 0)
-            {
-                Thread.Sleep(100); // wait for data
-            }
+            while (xX.Count == 0) Thread.Sleep(88);
 
-            using (var pipeClient = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
+            using (var pc = new NamedPipeClientStream(".", n, PipeDirection.Out))
             {
-                Console.WriteLine($"Connecting to pipe: {pipeName}...");
-                pipeClient.Connect();
+                Console.WriteLine("Connecting pipe..");
+                pc.Connect();
 
-                string json = JsonSerializer.Serialize(wordCounts);
-                byte[] buffer = Encoding.UTF8.GetBytes(json);
-                pipeClient.Write(buffer, 0, buffer.Length);
-                Console.WriteLine("Data sent successfully.");
+                var js = JsonSerializer.Serialize(xX);
+                var b = Encoding.UTF8.GetBytes(js);
+                pc.Write(b, 0, b.Length);
+                Console.WriteLine("Sent ✔");
             }
         }
     }
