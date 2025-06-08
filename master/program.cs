@@ -5,6 +5,7 @@ using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
+using System.Diagnostics;
 
 namespace Master
 {
@@ -27,6 +28,16 @@ namespace Master
 
         static void Main(string[] args)
         {
+            // Set CPU affinity to core 0
+            try
+            {
+                Process.GetCurrentProcess().ProcessorAffinity = (IntPtr)1; // core 0 = bit 0 set
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to set CPU affinity: " + ex.Message);
+            }
+
             if (args.Length < 2)
             {
                 Console.WriteLine("Usage: Master <PipeName1> <PipeName2>");
@@ -54,25 +65,32 @@ namespace Master
 
         static void ReceiveFromPipe(string pipeName)
         {
-            using var server = new NamedPipeServerStream(pipeName, PipeDirection.In);
-            Console.WriteLine($"Waiting for connection on pipe: {pipeName}...");
-            server.WaitForConnection();
-
-            using MemoryStream ms = new MemoryStream();
-            server.CopyTo(ms);
-
-            string json = Encoding.UTF8.GetString(ms.ToArray());
-            var list = JsonSerializer.Deserialize<List<WordCount>>(json);
-
-            if (list != null)
+            try
             {
-                lock (locker)
-                {
-                    allResults.AddRange(list);
-                }
-            }
+                using var server = new NamedPipeServerStream(pipeName, PipeDirection.In);
+                Console.WriteLine($"Waiting for connection on pipe: {pipeName}...");
+                server.WaitForConnection();
 
-            Console.WriteLine($"Data received from {pipeName}.");
+                using MemoryStream ms = new MemoryStream();
+                server.CopyTo(ms);
+
+                string json = Encoding.UTF8.GetString(ms.ToArray());
+                var list = JsonSerializer.Deserialize<List<WordCount>>(json);
+
+                if (list != null)
+                {
+                    lock (locker)
+                    {
+                        allResults.AddRange(list);
+                    }
+                }
+
+                Console.WriteLine($"Data received from {pipeName}.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in pipe {pipeName}: {ex.Message}");
+            }
         }
     }
 }
