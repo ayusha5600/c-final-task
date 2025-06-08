@@ -50,7 +50,7 @@ scannerA.txt:university:1
 
 ## How I Built and Ran It
 
-1. I used notepad  to write all code  (ScannerA, ScannerB, Master)  
+1. I used Visual studio to write all code  (ScannerA, ScannerB, Master)  
 2. I opened 3 different seperate  terminals:  
    - First, I ran the ScannerA  
    - Then I ran ScannerB  
