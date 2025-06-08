@@ -74,4 +74,4 @@ scannerB.exe "C:\Users\Administrator\Documents\oop\scanner project\scannerB" age
 - WordCount.cs  
 - scannerA.txt  
 - scannerB.txt  
-- UML  
+- testing report.pdf
