@@ -57,14 +57,16 @@ scannerA.txt:university:1
    - Finally, I ran master
 
 3. I passed the folder paths and pipe names as arguments like this:  
-cd "C:\Users\Administrator\Documents\oop\scanner project\master\bin\Debug\net6.0"  
-master.exe agent1 agent2
 
 cd "C:\Users\Administrator\Documents\oop\scanner project\scannerA\bin\Debug\net6.0"  
 scannerA.exe "C:\Users\Administrator\Documents\oop\scanner project\scannerA" agent1 
 
 cd "C:\Users\Administrator\Documents\oop\scanner project\scannerB\bin\Debug\net6.0"  
 scannerB.exe "C:\Users\Administrator\Documents\oop\scanner project\scannerB" agent2
+
+cd "C:\Users\Administrator\Documents\oop\scanner project\master\bin\Debug\net6.0"  
+master.exe agent1 agent2
+
 
 ## Files in My Project
 
