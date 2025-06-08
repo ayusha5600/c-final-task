@@ -27,6 +27,15 @@ namespace ScannerA
 
         static void Main(string[] args)
         {
+            try
+            {
+                System.Diagnostics.Process.GetCurrentProcess().ProcessorAffinity = (IntPtr)2;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to set CPU affinity: " + ex.Message);
+            }
+
             if (args.Length < 2)
             {
                 Console.WriteLine("Usage: ScannerA <DirectoryPath> <PipeName>");
@@ -76,21 +85,28 @@ namespace ScannerA
 
         static void SendData(string pipeName)
         {
-            // Wait until data is ready
-            while (wordCounts.Count == 0)
+            try
             {
-                Thread.Sleep(100); // wait for data
+                
+                while (wordCounts.Count == 0)
+                {
+                    Thread.Sleep(100);
+                }
+
+                using (var pipeClient = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
+                {
+                    Console.WriteLine($"Connecting to pipe: {pipeName}...");
+                    pipeClient.Connect();
+
+                    string json = JsonSerializer.Serialize(wordCounts);
+                    byte[] buffer = Encoding.UTF8.GetBytes(json);
+                    pipeClient.Write(buffer, 0, buffer.Length);
+                    Console.WriteLine("Data sent successfully.");
+                }
             }
-
-            using (var pipeClient = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
+            catch (Exception ex)
             {
-                Console.WriteLine($"Connecting to pipe: {pipeName}...");
-                pipeClient.Connect();
-
-                string json = JsonSerializer.Serialize(wordCounts);
-                byte[] buffer = Encoding.UTF8.GetBytes(json);
-                pipeClient.Write(buffer, 0, buffer.Length);
-                Console.WriteLine("Data sent successfully.");
+                Console.WriteLine($"Error sending data through pipe {pipeName}: {ex.Message}");
             }
         }
     }
